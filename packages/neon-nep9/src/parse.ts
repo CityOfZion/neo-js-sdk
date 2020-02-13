@@ -1,4 +1,4 @@
-import { tx, wallet } from "@cityofzion/neon-core";
+import { rpc, tx, wallet, sc, u, CONST } from "@cityofzion/neon-core";
 import { extractAmount, extractAsset, extractAttributes } from "./extract";
 
 /**
@@ -6,9 +6,15 @@ import { extractAmount, extractAsset, extractAttributes } from "./extract";
  */
 export interface NEP9Intent {
   address: string;
-  attributes: tx.TransactionAttributeLike[];
+  attributes: tx.TransactionAttribute[];
   asset?: string;
   amount?: number;
+}
+
+interface UTXO {
+  n: number;
+  txid: string;
+  value: number;
 }
 
 function validateScheme(scheme: string): void {
@@ -57,4 +63,81 @@ export function parse(uri: string): NEP9Intent {
   };
 }
 
-export default parse;
+function utxoParser(getUnspentsResult: any): wallet.Balance {
+  const bal = new wallet.Balance({
+    address: getUnspentsResult.address
+  });
+
+  for (const assetBalance of getUnspentsResult.balance) {
+    if (assetBalance.amount === 0) {
+      continue;
+    }
+    if (assetBalance.unspent.length > 0) {
+      bal.addAsset(assetBalance.asset_symbol, {
+        unspent: assetBalance.unspent.map(
+          (utxo: UTXO) =>
+            new wallet.Coin({
+              index: utxo.n,
+              txid: utxo.txid,
+              value: utxo.value
+            })
+        )
+      });
+    } else {
+      bal.addToken(assetBalance.asset_symbol, assetBalance.amount);
+    }
+  }
+  return bal;
+}
+
+export async function execute(
+  nep9Intent: NEP9Intent,
+  account: wallet.Account,
+  url: string
+): Promise<any> {
+  const { address, asset, amount, attributes } = nep9Intent;
+  if (!asset || !amount) {
+    throw new Error("URI doesn't contain a contact transaction");
+  }
+
+  let transaction: tx.Transaction;
+  if (asset.length === 64) {
+    const balance: wallet.Balance = await rpc.Query.getUnspents(account.address)
+      .parseWith(utxoParser)
+      .execute(url);
+    transaction = new tx.ContractTransaction();
+    transaction
+      .addIntent(CONST.ASSETS[asset], amount, address)
+      .calculate(balance)
+      .sign(account.privateKey);
+    attributes.map(attr => {
+      transaction.addAttribute(attr.usage, attr.data);
+    });
+    return rpc.Query.sendRawTransaction(transaction).execute(url);
+  } else if (asset.length === 40) {
+    const from = sc.ContractParam.byteArray(account.address, "address");
+    const to = sc.ContractParam.byteArray(address, "address");
+    const scriptIntent = {
+      scriptHash: asset,
+      operation: "transfer",
+      args: [from, to, amount]
+    };
+    const script = sc.createScript(scriptIntent);
+    transaction = new tx.InvocationTransaction({
+      script,
+      gas: 0
+    });
+    transaction
+      .addAttribute(
+        tx.TxAttrUsage.Script,
+        u.reverseHex(wallet.getScriptHashFromAddress(account.address))
+      )
+      .addRemark(
+        Date.now().toString() + u.ab2hexstring(u.generateRandomArray(4))
+      ) //to avoid hash collision
+      .sign(account.privateKey);
+    return rpc.Query.sendRawTransaction(transaction).execute(url);
+  } else {
+    throw new Error("Address length is not right.");
+  }
+}

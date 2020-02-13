@@ -1,4 +1,5 @@
-import { NEP9Intent, parse } from "../src/parse";
+import { NEP9Intent, parse, execute } from "../src/parse";
+import { wallet } from "@cityofzion/neon-core";
 
 test("errors if nothing given", () => {
   expect(() => parse("neo:")).toThrow();
@@ -74,4 +75,15 @@ describe("parse", () => {
     const result = parse(uri);
     expect(result).toMatchObject(expected);
   });
+});
+
+test("execute", () => {
+  const intent = parse(
+    "neo:ASAZFGDqV1yVkMwyoRUW2utGueQoLzNfjd?asset=neo&amount=1"
+  );
+  const account = new wallet.Account();
+  const url = "https://mock.url";
+  expect(typeof execute).toBe("function");
+  const executeContext = execute(intent, account, url);
+  expect(executeContext).toBeInstanceOf(Promise);
 });

@@ -79,9 +79,9 @@ function matchAttribute(
 
 export function extractAttributes(params: {
   [key: string]: string;
-}): tx.TransactionAttributeLike[] {
+}): tx.TransactionAttribute[] {
   const attributes = Object.keys(params).map(key =>
     matchAttribute(key, params[key])
   );
-  return attributes.filter(a => a) as tx.TransactionAttributeLike[];
+  return attributes.filter(a => a) as tx.TransactionAttribute[];
 }
