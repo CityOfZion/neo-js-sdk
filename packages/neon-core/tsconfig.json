@@ -2,7 +2,7 @@
   "extends": "../../tsconfig-base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "lib"
+    "outDir": "lib/node/esm"
   },
   // default include without extensions only inclues typescript stuff
   "include": ["src/**/*", "src/**/*.json","./typings/*"]

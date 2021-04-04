@@ -17,18 +17,25 @@
   ],
   "author": "Yak Jun Xiang <snowypowers@gmail.com> (https://github.com/snowypowers)",
   "license": "MIT",
-  "main": "dist/index.js",
-  "module": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/node/esm/index.js",
+  "module": "lib/node/esm/index.js",
+  "types": "lib/node/esm/index.d.ts",
+  "exports": {
+    "node": {
+      "module": "./lib/node/esm/index.js",
+      "import": "./lib/node/esm/index.js",
+      "require": "./lib/node/cjs/index.js"
+    },
+    "default": "./lib/node/esm/index.js"
+  },
   "scripts": {
     "build": "tsc -b",
-    "dist": "tsc -m commonjs --outDir dist",
-    "dist:prod": "tsc -m commonjs --outDir dist",
-    "clean": "rimraf ./lib ./dist tsconfig.tsbuildinfo",
-    "prepublishOnly": "yarn clean && yarn build && yarn dist:prod",
+    "build:cjs": "tsc --module commonjs --outDir lib/node/cjs",
+    "clean": "rimraf ./lib tsconfig.tsbuildinfo",
+    "prepublishOnly": "yarn build && yarn build:cjs",
     "lint": "eslint src/**/*.ts __tests__/**/*.ts __integration__/**/*.ts",
     "pretty": "prettier --write --loglevel=warn \"./{src,__{tests,integration}__}/**/*.ts\"",
-    "start": "jest --watch",
+    "start": "yarn build && jest --watch",
     "test": "jest",
     "test:unit": "jest /packages/.*/__tests__/.*"
   },
@@ -39,8 +46,6 @@
     "@cityofzion/neon-core": "^4.0.0"
   },
   "files": [
-    "dist/",
     "lib/"
-  ],
-  "gitHead": "d21633d03deca1f4bc6c3a4f4e1d32a61aec2fe3"
+  ]
 }
