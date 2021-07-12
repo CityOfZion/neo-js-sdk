@@ -5,8 +5,11 @@ import {
   filterHttpsOnly,
   findGoodNodesFromHeight,
   getBestUrl,
+  AddressAbstract,
   RpcNode,
+  Entry,
 } from "../common";
+import { DoraAddressAbstracts, TEntry } from "../dora/responses";
 import { transformBalance, transformClaims } from "../neoCli/transform";
 import {
   DoraGetBalanceResponse,
@@ -67,4 +70,22 @@ export async function getMaxClaimAmount(
   }
 
   return new u.Fixed8(data.unclaimed);
+}
+
+function parseEntries(entries: TEntry[]): Entry[] {
+  return entries.map((it) => {
+    return { ...it, amount: String(it.amount) };
+  });
+}
+
+export async function getAddressAbstracts(
+  url: string,
+  address: string,
+  page: number
+): Promise<AddressAbstract> {
+  const response = await axios.get(
+    `${url}/get_address_abstracts/${address}/${page}`
+  );
+  const data = response.data as DoraAddressAbstracts;
+  return { ...data, entries: parseEntries(data.entries) };
 }

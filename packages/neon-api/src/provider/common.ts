@@ -61,3 +61,21 @@ export function findGoodNodesFromHeight(
   const threshold = bestHeight - tolerance;
   return sortedNodes.filter((n) => n.height >= threshold);
 }
+
+export interface Entry {
+  txid: string;
+  time: number;
+  block_height: number;
+  asset: string;
+  amount: string;
+  address_to: string;
+  address_from: string;
+}
+
+export interface AddressAbstract {
+  total_pages: number;
+  total_entries: number;
+  page_size: number;
+  page_number: number;
+  entries: Entry[];
+}

@@ -1,5 +1,5 @@
 import { logging, rpc, settings, u, wallet } from "@cityofzion/neon-core";
-import { PastTransaction, Provider } from "../common";
+import { AddressAbstract, PastTransaction, Provider } from "../common";
 import {
   getBalance,
   getClaims,
@@ -63,5 +63,4 @@ export class NeonDB implements Provider {
     return getTransactionHistory(this.url, address);
   }
 }
-
 export default NeonDB;

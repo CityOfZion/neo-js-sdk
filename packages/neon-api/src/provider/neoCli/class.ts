@@ -1,5 +1,5 @@
 import { logging, rpc, u, wallet } from "@cityofzion/neon-core";
-import { PastTransaction, Provider } from "../common";
+import { AddressAbstract, PastTransaction, Provider } from "../common";
 import { getBalance, getClaims, getMaxClaimAmount } from "./core";
 
 const log = logging.default("api");

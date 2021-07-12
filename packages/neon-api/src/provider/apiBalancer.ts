@@ -1,5 +1,5 @@
 import { logging, u, wallet } from "@cityofzion/neon-core";
-import { PastTransaction, Provider } from "./common";
+import { AddressAbstract, PastTransaction, Provider } from "./common";
 const log = logging.default("api");
 
 export default class ApiBalancer implements Provider {

@@ -7,8 +7,10 @@ import {
   getBestUrl,
   PastTransaction,
   RpcNode,
+  AddressAbstract,
 } from "../common";
 import {
+  NeoscanAddressAbstracts,
   NeoscanBalance,
   NeoscanClaim,
   NeoscanPastTx,
@@ -202,4 +204,16 @@ export async function getTransactionHistory(
   const data = response.data as NeoscanPastTx[];
   log.info(`Retrieved History for ${address} from neoscan ${url}`);
   return parseTxHistory(data, address);
+}
+
+export async function getAddressAbstracts(
+  url: string,
+  address: string,
+  page: number
+): Promise<AddressAbstract> {
+  const response = await axios.get(
+    `${url}/v1/get_address_abstracts/${address}/${page}`
+  );
+  const data = response.data as NeoscanAddressAbstracts;
+  return data;
 }
