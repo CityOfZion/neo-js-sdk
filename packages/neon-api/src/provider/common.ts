@@ -5,6 +5,58 @@ export interface PastTransaction {
   change: { [assetSymbol: string]: u.Fixed8 };
 }
 
+export interface Vout {
+  value: number;
+  txid?: string;
+  n: number;
+  asset: string;
+  address_hash?: string;
+  address?: string;
+}
+
+export interface Vin {
+  value?: number;
+  txid: string;
+  n?: number;
+  asset?: string;
+  address_hash?: string;
+  vout?: number;
+}
+
+interface Script {
+  invocation: string;
+  verification: string;
+}
+
+interface Claim {
+  value: number;
+  txid: string;
+  n: number;
+  asset: string;
+  address_hash: string;
+}
+
+interface Attribute {
+  usage: string;
+  data: string;
+}
+
+export interface ITransaction {
+  vouts: Vout[];
+  vin: Vin[];
+  version: number;
+  type: string;
+  txid: string;
+  time: number;
+  sys_fee: number;
+  size: number;
+  scripts: Script[];
+  net_fee: number;
+  claims: Claim[];
+  block_height: number;
+  attributes: Attribute[];
+}
+
 export interface Provider {
   name: string;
   getRPCEndpoint(noCache?: boolean): Promise<string>;

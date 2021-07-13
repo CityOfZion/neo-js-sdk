@@ -1,3 +1,4 @@
+import { ITransaction, Vin, Vout } from "../common";
 export interface NeoscanV1GetBalanceResponse {
   balance: NeoscanBalance[] | null;
   address: string;
@@ -43,11 +44,24 @@ export interface NeoscanV1GetHeightResponse {
   height: number;
 }
 
+export interface NeoscanTransaction
+  extends Omit<ITransaction, "vin" | "vouts"> {
+  asset: null;
+  block_hash: string;
+  contract: null;
+  description: null;
+  nonce: null;
+  pubkey: null;
+  vin: Required<Omit<Vin, "vout">>[];
+  vouts: Required<Omit<Vout, "address">>[];
+}
+
 export interface NeoscanPastTx {
   vouts: [
     {
       value: number;
-      transaction_id: number;
+      txid: string;
+      n: number;
       asset: string;
       address_hash: string;
     }
@@ -75,19 +89,17 @@ export interface NeoscanPastTx {
     }
   ];
   time: number;
-  sys_fee: string;
+  sys_fee: number;
   size: number;
-  net_fee: string;
+  net_fee: number;
   id: number;
-  claims: [
-    {
-      value: number;
-      txid: string;
-      n: number;
-      asset: string;
-      address_hash: string;
-    }
-  ];
+  claims: {
+    value: number;
+    txid: string;
+    n: number;
+    asset: string;
+    address_hash: string;
+  }[];
   block_height: number;
   block_hash: string;
   asset: null;

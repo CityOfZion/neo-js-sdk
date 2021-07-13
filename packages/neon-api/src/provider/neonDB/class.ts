@@ -1,5 +1,5 @@
 import { logging, rpc, settings, u, wallet } from "@cityofzion/neon-core";
-import { PastTransaction, Provider } from "../common";
+import { ITransaction, PastTransaction, Provider } from "../common";
 import {
   getBalance,
   getClaims,

@@ -68,3 +68,11 @@ test("getTransactionHistory", async () => {
     expectedAddress
   );
 });
+
+test("getTransaction", async () => {
+  const expectedUrl = "www.test.com";
+  const expectedTxid = "txid";
+  const obj = new neoscan(expectedUrl);
+  await obj.getTransaction(expectedTxid);
+  expect(core.getTransaction).toBeCalledWith(expectedUrl, expectedTxid);
+});

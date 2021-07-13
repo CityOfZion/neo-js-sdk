@@ -1,15 +1,24 @@
 import { logging, settings, u, wallet } from "@cityofzion/neon-core";
-import { PastTransaction, Provider } from "../common";
+import { ITransaction, PastTransaction, Provider } from "../common";
 import {
   getBalance,
   getClaims,
   getHeight,
   getMaxClaimAmount,
   getRPCEndpoint,
+  getTransaction,
 } from "./core";
+import { DoraTransaction } from "./responses";
 
 const log = logging.default("api");
-export class Dora implements Provider {
+
+interface DoraProvider extends Provider {
+  getTransaction: (
+    txid: string
+  ) => Promise<ITransaction & Pick<DoraTransaction, "jsonsize">>;
+}
+
+export class Dora implements DoraProvider {
   private url: string;
 
   public get name(): string {
@@ -45,6 +54,11 @@ export class Dora implements Provider {
     _address: string
   ): Promise<PastTransaction[]> {
     throw new Error("Method not implemented.");
+  }
+  public getTransaction(
+    txid: string
+  ): Promise<ITransaction & Pick<DoraTransaction, "jsonsize">> {
+    return getTransaction(this.url, txid);
   }
 }
 

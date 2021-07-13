@@ -2,6 +2,7 @@ import { rpc, settings, u, wallet } from "@cityofzion/neon-core";
 import axios from "axios";
 import * as common from "../../../src/provider/common";
 import * as neoscan from "../../../src/provider/neoscan/core";
+import { NeoscanTransaction } from "../../../src/provider/neoscan/responses";
 import { default as internal } from "../../../src/settings";
 jest.mock("axios");
 jest.mock("../../../src/provider/common");
@@ -438,5 +439,90 @@ describe("getTransactionHistory", () => {
     expect(httpCall).toBeCalledWith(
       testUrl + "/v1/get_last_transactions_by_address/address"
     );
+  });
+});
+
+describe("getTransaction", () => {
+  test("return sucess transaction", async () => {
+    const resMockObj = {
+      asset: null,
+      attributes: [],
+      block_hash:
+        "75c26527eae879fdd14c3f146cbb92a024c6570122acd56a5d604d5558573392",
+      block_height: 6441685,
+      claims: [],
+      contract: null,
+      description: null,
+      net_fee: 0,
+      nonce: null,
+      pubkey: null,
+      scripts: [
+        {
+          invocation:
+            "40f9f59a4f5ddc6b4a77a6bee0155dd16a39b9fda73e06eb4a75ec0c1407da00c9069d2c3aa9e71820ccc2e686fb423ff3aa167f005de9dea8c3a3e140187a49ec",
+          verification:
+            "210217abc7fa5db7f6ebbd07f6c1e6359dda67d7f2da30571a8cb9c1f7c805680ccdac",
+        },
+      ],
+      size: 202,
+      sys_fee: 0,
+      time: 1604948913,
+      txid: "12d2c0ebf96c54d3dea7403f713bc17bffc677dc36c0c23fb11903233a1fd002",
+      type: "ContractTransaction",
+      version: 0,
+      vin: [
+        {
+          address_hash: "AeGgZTTWPzyVtNiQRcpngkV75Xip1hznmi",
+          asset: "NEO",
+          n: 0,
+          txid: "74c9cc905184386525563f3895165c57740da1b0f3e059f416ce86646256c29c",
+          value: 1,
+        },
+      ],
+      vouts: [
+        {
+          address_hash: "AeGgZTTWPzyVtNiQRcpngkV75Xip1hznmi",
+          asset: "NEO",
+          n: 0,
+          txid: "12d2c0ebf96c54d3dea7403f713bc17bffc677dc36c0c23fb11903233a1fd002",
+          value: 1,
+        },
+      ],
+    };
+
+    const resultMockObj = {
+      attributes: resMockObj.attributes,
+      block_height: resMockObj.block_height,
+      claims: resMockObj.claims,
+      net_fee: resMockObj.net_fee,
+      scripts: resMockObj.scripts,
+      size: resMockObj.size,
+      sys_fee: resMockObj.sys_fee,
+      time: resMockObj.time,
+      txid: resMockObj.txid,
+      type: resMockObj.type,
+      version: resMockObj.version,
+      vin: resMockObj.vin,
+      vouts: resMockObj.vouts,
+      asset: resMockObj.asset,
+      block_hash: resMockObj.block_hash,
+      contract: resMockObj.contract,
+      description: resMockObj.description,
+      nonce: resMockObj.nonce,
+      pubkey: resMockObj.pubkey,
+    } as common.ITransaction &
+      Pick<
+        NeoscanTransaction,
+        "asset" | "block_hash" | "contract" | "description" | "nonce" | "pubkey"
+      >;
+
+    const httpCall = jest
+      .fn()
+      .mockImplementationOnce(() => Promise.resolve({ data: resMockObj }));
+    axios.get = httpCall;
+    expect(await neoscan.getTransaction(testUrl, "txid")).toEqual(
+      resultMockObj
+    );
+    expect(httpCall).toBeCalledWith(testUrl + "/v1/get_transaction/txid");
   });
 });

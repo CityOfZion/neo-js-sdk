@@ -5,13 +5,17 @@ import {
   filterHttpsOnly,
   findGoodNodesFromHeight,
   getBestUrl,
+  ITransaction,
   RpcNode,
+  Vin,
+  Vout,
 } from "../common";
 import { transformBalance, transformClaims } from "../neoCli/transform";
 import {
   DoraGetBalanceResponse,
   DoraGetClaimableResponse,
   DoraGetUnclaimedResponse,
+  DoraTransaction,
 } from "./responses";
 
 export async function getRPCEndpoint(url: string): Promise<string> {
@@ -67,4 +71,56 @@ export async function getMaxClaimAmount(
   }
 
   return new u.Fixed8(data.unclaimed);
+}
+
+function parseVin(vin: Required<Pick<Vin, "txid" | "vout">>[]): Vin[] {
+  return vin.map((it) => {
+    return {
+      txid: it.txid,
+      vout: it.vout,
+    };
+  });
+}
+
+function parseVout(
+  vouts: Required<Omit<Vout, "address_hash" | "txid">>[]
+): Vout[] {
+  return vouts.map((it) => {
+    return {
+      asset: it.asset,
+      n: it.n,
+      value: it.value,
+      address: it.address,
+    };
+  });
+}
+
+function parseTransaction(
+  data: DoraTransaction
+): ITransaction & Pick<DoraTransaction, "jsonsize"> {
+  return {
+    attributes: data.attributes,
+    block_height: data.block,
+    claims: data.claims,
+    net_fee: Number(data.net_fee),
+    scripts: data.scripts,
+    size: data.size,
+    sys_fee: Number(data.sys_fee),
+    time: Number(data.time),
+    txid: data.txid,
+    type: data.type,
+    version: data.version,
+    vin: parseVin(data.vin),
+    vouts: parseVout(data.vout),
+    jsonsize: data.jsonsize,
+  };
+}
+
+export async function getTransaction(
+  url: string,
+  txid: string
+): Promise<ITransaction & Pick<DoraTransaction, "jsonsize">> {
+  const response = await axios.get(`${url}/transaction/${txid}`);
+  const data = response.data as DoraTransaction;
+  return parseTransaction(data);
 }
