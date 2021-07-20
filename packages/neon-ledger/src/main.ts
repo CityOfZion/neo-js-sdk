@@ -1,48 +1,95 @@
 import Transport from "@ledgerhq/hw-transport";
+import { u } from "@cityofzion/neon-core";
 import {
-  ErrorCode,
+  StatusWord,
   evalTransportError,
   TransportStatusError,
 } from "./ErrorCode";
+
 import { DerToHexSignature } from "./utils";
 
-const DEFAULT_STATUSLIST = [ErrorCode.VALID_STATUS];
+const DEFAULT_STATUSLIST = [StatusWord.OK];
+
+enum Command {
+  GET_APP_NAME = 0x00,
+  GET_VERSION = 0x01,
+  SIGN_TX = 0x02,
+  GET_PUBLIC_KEY = 0x04,
+}
 
 /**
- * Appends data to the Ledger for signature.
- * @param msg - string up to 510 characters (256 bytes)
+ * Helper to send data chunks to sign.
+ * @param ledger - Ledger instance
+ * @param msg - data up to 510 character
+ * @param chunk - data sequence number. Start at 0, increase by 1
+ * @param finalChunk - set to true if this is the last chunk for the command
  */
-async function appendDataForSignature(
+async function sendDataToSign(
   ledger: Transport,
-  msg: string
+  msg: string,
+  chunk: number,
+  finalChunk = false
 ): Promise<Buffer> {
   return await ledger.send(
     0x80,
-    0x02,
-    0x00,
-    0x00,
+    Command.SIGN_TX,
+    chunk,
+    finalChunk ? 0x00 : 0x80,
     Buffer.from(msg, "hex"),
     DEFAULT_STATUSLIST
   );
 }
 
 /**
- * Appends data to the Ledger and returns the signature of the entire message that has been appended so far.
+ * Requests the public key of a requested address from the Ledger.
  * @param ledger - Ledger instance
- * @param msg - string up to 510 characters (256 bytes)
+ * @returns the ledger application name. Expected "NEO3"
  */
-async function finalizeDataForSignature(
-  ledger: Transport,
-  msg: string
-): Promise<Buffer> {
-  return await ledger.send(
-    0x80,
-    0x02,
-    0x80,
-    0x00,
-    Buffer.from(msg, "hex"),
-    DEFAULT_STATUSLIST
-  );
+export async function getAppName(ledger: Transport): Promise<string> {
+  try {
+    const response = await ledger.send(
+      0x80,
+      Command.GET_APP_NAME,
+      0x00,
+      0x00,
+      undefined,
+      DEFAULT_STATUSLIST
+    );
+    const version = response.toString("ascii");
+    return version.substring(0, version.length - 2); // take of status word
+  } catch (e) {
+    if (e.statusCode) {
+      throw evalTransportError(e as TransportStatusError);
+    }
+    throw e;
+  }
+}
+
+/**
+ * Requests the public key of a requested address from the Ledger.
+ * @param ledger - Ledger instance
+ * @returns the application version in Major.Minor.Patch format
+ */
+export async function getAppVersion(ledger: Transport): Promise<string> {
+  try {
+    const response = await ledger.send(
+      0x80,
+      Command.GET_VERSION,
+      0x00,
+      0x00,
+      undefined,
+      DEFAULT_STATUSLIST
+    );
+    const major = response.readUInt8(0);
+    const minor = response.readUInt8(1);
+    const patch = response.readUInt8(2);
+    return major.toString() + "." + minor.toString() + "." + patch.toString();
+  } catch (e) {
+    if (e.statusCode) {
+      throw evalTransportError(e as TransportStatusError);
+    }
+    throw e;
+  }
 }
 
 /**
@@ -72,7 +119,7 @@ export async function getPublicKey(
   try {
     const response = await ledger.send(
       0x80,
-      0x04,
+      Command.GET_PUBLIC_KEY,
       0x00,
       0x00,
       Buffer.from(bip44String, "hex"),
@@ -90,26 +137,32 @@ export async function getPublicKey(
 /**
  * Requests the device to sign a message using the NEO application.
  * @param ledger - Ledger instance
- * @param hex - message to sign as a hexstring.
+ * @param payload - message to sign as a hexstring.
  * @param bip44String - BIP44 string (40 bytes)
+ * @param networkMagic - MainNet, TestNet or custom network magic
  * @returns Signature as a hexstring (64 bytes)
  */
 export async function getSignature(
   ledger: Transport,
-  hex: string,
-  bip44String: string
+  payload: string,
+  bip44String: string,
+  networkMagic: number
 ): Promise<string> {
-  const payload = hex + bip44String;
+  await sendDataToSign(ledger, bip44String, 0);
+  await sendDataToSign(ledger, u.num2hexstring(networkMagic, 4, true), 1);
+
   const chunks = payload.match(/.{1,510}/g) || [];
   try {
     for (let i = 0; i < chunks.length - 1; i++) {
-      await appendDataForSignature(ledger, chunks[i]);
+      await sendDataToSign(ledger, chunks[i], 2 + i);
     }
-    const response = await finalizeDataForSignature(
+    const response = await sendDataToSign(
       ledger,
-      chunks[chunks.length - 1]
+      chunks[chunks.length - 1],
+      2 + chunks.length,
+      true
     );
-    if (response.readUIntBE(0, 2) === ErrorCode.VALID_STATUS) {
+    if (response.readUIntBE(0, 2) === StatusWord.OK) {
       throw new Error(`No more data but Ledger did not return signature!`);
     }
     return DerToHexSignature(response.toString("hex"));
